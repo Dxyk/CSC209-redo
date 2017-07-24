@@ -5,5 +5,6 @@
 
 // Hash manipulation helper functions
 char *hash(FILE *f);
+// void show_hash(char *hash);
 
 #endif // _HASH_H_

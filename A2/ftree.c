@@ -63,15 +63,11 @@ struct TreeNode *generate_ftree(const char *fname) {
 
 	current_node->permissions = 0777 & stat->st_mode;
 
-	//TODO: hash
 	current_node->hash = NULL;
 
 	current_node->next = NULL;
 
 	current_node->contents = NULL;
-
-
-	// printf("%s %o\n", current_node->fname, current_node->permissions);
 
 	if (S_ISREG(stat->st_mode) || S_ISLNK(stat->st_mode)) {
 		// if the file is regular
@@ -81,8 +77,12 @@ struct TreeNode *generate_ftree(const char *fname) {
 			exit(-1);
 		}
 
+		// TODO: hash last value??
 		char *hash_val = hash(f);
-		current_node->hash = hash_val;
+		current_node->hash = malloc(sizeof(char) * (BLOCK_SIZE + 1));
+		strncat(current_node->hash, hash_val, BLOCK_SIZE);
+		current_node->hash[BLOCK_SIZE + 1] = '\0';
+		show_hash(current_node->hash);
 
 		if (fclose(f) != 0) {
 			perror("fclose");
