@@ -42,21 +42,21 @@ struct TreeNode *generate_ftree(const char *fname) {
 	}
 
 	// malloc for stat
-	if (!(stat = malloc(sizeof(struct stat)))) {
-		perror("malloc stat");
-		exit(-1);
-	}
+if (!(stat = malloc(sizeof(struct stat)))) {
+	perror("malloc stat");
+	exit(-1);
+}
 
-	if (lstat(fname, stat) != 0) {
-		perror("lstat");
-		exit(-1);
-	}
+if (lstat(fname, stat) != 0) {
+	perror("lstat");
+	exit(-1);
+}
 
-	// assign file name and permission and since it is the root it has no next.
-	strncpy(fname_cpy, fname, strlen(fname));
-	fname_cpy[strlen(fname)] = '\0';
+// assign file name and permission and since it is the root it has no next.
+strncpy(fname_cpy, fname, strlen(fname));
+fname_cpy[strlen(fname)] = '\0';
 
-	char *base_fname = basename(fname_cpy);
+char *base_fname = basename(fname_cpy);
 
 	current_node->fname = malloc(sizeof(char) * strlen(base_fname));
 	strncpy(current_node->fname, base_fname, strlen(base_fname));
@@ -100,7 +100,7 @@ struct TreeNode *generate_ftree(const char *fname) {
 
 		while ((dirent = readdir(dirp))) {
 			// ignore . files
-			if (dirent->d_name[0] == '.') {
+			if (strncmp(dirent->d_name, ".", 1) == 0) {
 				continue;
 			}
 
@@ -109,7 +109,7 @@ struct TreeNode *generate_ftree(const char *fname) {
 			strncpy(new_path, fname, strlen(fname));
 			new_path[strlen(fname)] = '\0';
 			strncat(new_path, "/", 1);
-			strncat(new_path, dirent->d_name, strlen(dirent->d_name));
+			strncat(new_path, dirent->d_name, strlen(dirent->d_name) + 1);
 			new_path[strlen(new_path)] = '\0';
 
 			if (is_first) {
