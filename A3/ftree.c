@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <errno.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,13 +63,113 @@ int copy_ftree(const char *src, const char *dest) {
  * @return      the number of processes used
  */
 int copy_dir(const char *src, const char *dest) {
-	return 0;
+	int process_count = 1;
+	DIR *dirp;
+	struct dirent *dirent;
+	struct stat src_stat, dest_stat;
+	int result;
+
+	if (!(dirp = opendir(src))) {
+		perror("opendir");
+		exit(-1);
+	}
+
+	if (lstat(src, &src_stat) != 0) {
+		perror("lstat src");
+		return -1;
+	}
+
+	// get the new dest dir
+	char *src_cpy = malloc(strlen(src) + 1);
+	strncpy(src_cpy, src, strlen(src));
+	src_cpy[strlen(src)] = '\0';
+	char dest_dir[strlen(dest) + 2 + strlen(basename(src_cpy))];
+	strncpy(dest_dir, dest, strlen(dest));
+	dest_dir[strlen(dest)] = '\0';
+	strncat(dest_dir, "/", 1);
+	strncat(dest_dir, basename(src_cpy), strlen(basename(src_cpy)));
+	dest_dir[strlen(dest) + 2 + strlen(basename(src_cpy))] = '\0';
+	free(src_cpy);
+
+	// copy dir if directory does not exist already
+	if (lstat(dest_dir, &dest_stat) < 0) {
+		if (errno == ENOENT) {
+			if (mkdir(dest_dir, src_stat.st_mode) < 0) {
+				perror("mkdir dest_dir");
+				return -1;
+			}
+		} else {
+			perror("lstat dest_dir");
+			return -1;
+		}
+	}
+
+	// traverse directory
+	while ((dirent = readdir(dirp))) {
+		// ignore . files
+		if (strncmp(dirent->d_name, ".", 1) == 0) {
+			continue;
+		}
+
+		// get new src file or dir name
+		char *new_src = malloc(strlen(src) + 2 + strlen(dirent->d_name));
+		strncpy(new_src, src, strlen(src));
+		new_src[strlen(src)] = '\0';
+		strncat(new_src, "/", 2);
+		strncat(new_src, dirent->d_name, strlen(dirent->d_name));
+		new_src[strlen(src) + 2 + strlen(dirent->d_name)] = '\0';
+
+		// get the status of the source file or dir
+		if (lstat(new_src, &src_stat) != 0) {
+			free(new_src);
+			perror("lstat new src");
+			return -1;
+		}
+
+		if (S_ISREG(src_stat.st_mode)) {
+			// if the source is a file then copy the file
+			copy_file(new_src, dest_dir);
+		} else if (S_ISDIR(src_stat.st_mode)) {
+
+			// if the source is a directory then fork
+			if ((result = fork()) == 0) {
+				// child copies the directory recursively and exit with the
+				// process number count
+				exit(copy_dir(new_src, dest_dir));
+			} else if (result > 0) {
+				// parent waits for child to finish
+				pid_t pid;
+				int status;
+				if ((pid = wait(&status)) == -1) {
+					perror("wait");
+					return -1;
+				} else {
+					if (WIFEXITED(status)) {
+						process_count += WEXITSTATUS(status);
+					} else {
+						fprintf(stderr, "wait: should not get here\n");
+					}
+				}
+			} else {
+				perror("fork");
+				exit(-1);
+			}
+		} else {
+			free(new_src);
+			fprintf(stderr, "%s file type not compatible\n", new_src);
+			return -1;
+		}
+		free(new_src);
+	}
+	closedir(dirp);
+
+	return process_count;
 }
 
 /**
  * Copy the source file to the destination directory
- * @param  src  the source file
- * @param  dest the destination directory
+ * @param  src  the relative source file path
+ * @param  dest the destination directory path
  * @return      the number of processes used
  */
 int copy_file(const char *src, const char *dest) {
@@ -85,7 +186,6 @@ int copy_file(const char *src, const char *dest) {
 	strncpy(new_dest, dest, strlen(dest) + 1);
 	strncat(new_dest, "/", 2);
 	strncat(new_dest, basename(src_cpy), strlen(basename(src_cpy)) + 1);
-	printf("%s %lu\n", new_dest, strlen(new_dest));
 
 	if (lstat(src, &src_stat) != 0) {
 		perror("lstat src");
@@ -126,11 +226,11 @@ int copy_file(const char *src, const char *dest) {
 		}
 	}
 
-	// if out side while loop then dest either has no file or the file's content
+	// if outside while loop then dest either has no file or the file's content
 	// is different from the src's content
 	rewind(src_f);
 	char content;
-	// create file and copy
+	// create file, copy and chmod
 	if (!(new_dest_f = fopen(new_dest, "wb"))) {
 		perror("fopen new_dest");
 		return -1;
@@ -140,7 +240,6 @@ int copy_file(const char *src, const char *dest) {
 			fprintf(stderr, "fwrite\n");
 		}
 	}
-
 	chmod(new_dest, src_stat.st_mode);
 
 	return 1;
