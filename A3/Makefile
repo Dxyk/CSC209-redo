@@ -19,4 +19,4 @@ test:
 	fcopy test/src test/dest
 
 simple_test:
-	fcopy simple_test/src simple_test/dest
+	fcopy simple_test/src simple_test/file
