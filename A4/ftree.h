@@ -1,6 +1,7 @@
 #ifndef _FTREE_H_
 #define _FTREE_H_
 
+#include <sys/stat.h>
 #include "hash.h"
 
 #define MAXPATH 128
