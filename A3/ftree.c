@@ -65,7 +65,7 @@ int copy_dir(const char *src, const char *dest) {
 	int process_count = 1;
 	DIR *dirp;
 	struct dirent *dirent;
-	struct stat src_stat, dest_stat;
+	struct stat src_stat;
 	int result;
 
 	if (!(dirp = opendir(src))) {
