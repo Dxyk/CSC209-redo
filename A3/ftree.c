@@ -44,7 +44,6 @@ int copy_ftree(const char *src, const char *dest) {
 	}
 
 	if (S_ISREG(src_stat.st_mode)) {
-		// TODO: file
 		process_count = copy_file(src, dest);
 	} else if (S_ISDIR(src_stat.st_mode)) {
 		process_count = copy_dir(src, dest);
@@ -92,14 +91,9 @@ int copy_dir(const char *src, const char *dest) {
 	free(src_cpy);
 
 	// copy dir if directory does not exist already
-	if (lstat(dest_dir, &dest_stat) < 0) {
-		if (errno == ENOENT) {
-			if (mkdir(dest_dir, src_stat.st_mode) < 0) {
-				perror("mkdir dest_dir");
-				return -1;
-			}
-		} else {
-			perror("lstat dest_dir");
+	if (mkdir(dest_dir, src_stat.st_mode) < 0) {
+		if (errno != EEXIST) {
+			perror("mkdir dest_dir");
 			return -1;
 		}
 	}
