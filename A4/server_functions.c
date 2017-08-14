@@ -169,6 +169,10 @@ int handle_client(struct client *cp, struct client *head) {
 				}
 			} else {
 				request = OK;
+				if (write(cp->fd, &request, sizeof(int)) < 0) {
+					perror("make_dir: write");
+					return -1;
+				}
 			}
 
 		} else { // Unsupported file type
