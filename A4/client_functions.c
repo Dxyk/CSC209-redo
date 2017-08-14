@@ -13,6 +13,8 @@ static int generate_request(int sock_fd, char *src_path, char *server_path,
 static int send_request(int sock_fd, struct request *request);
 static int send_data(int sock_fd, char *src_path);
 
+int CHILD_COUNT = 0;
+
 
 /**
  * Initialize a client socket.
@@ -53,6 +55,30 @@ int client_sock(char *host, unsigned short port) {
 }
 
 
+int main_client_wait() {
+	while(CHILD_COUNT != 0){
+        pid_t pid;
+        int status;
+        if((pid = wait(&status)) == -1) {
+            perror("main_client_wait: wait");
+            return -1;
+        } else {
+
+            if(!WIFEXITED(status)){
+                fprintf(stderr, "main_client_wait: wait return no status\n");
+                return -1;
+            } else if(WEXITSTATUS(status) != 0){
+                fprintf(stderr, "main_client_wait: child %d \tterminated "
+                        "with [%d] (error)\n", pid, WEXITSTATUS(status));
+                return -1;
+            }
+        }
+		CHILD_COUNT --;
+    }
+    return 0;
+}
+
+
 /**
  * Traverse the file rooted at src.
  * @param  sock_fd the socket file descriptor.
@@ -85,6 +111,7 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 	if (response == SENDFILE) {
 		// fork a new process and send file
 		int result = fork();
+		CHILD_COUNT ++;
 		if (result < 0) {
 			perror("traverse: fork");
 			return -1;
@@ -190,6 +217,7 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 		fprintf(stderr, "traverse: Not supported file fomat\n");
 		return -1;
 	}
+
 
 	return 0;
 }

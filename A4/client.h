@@ -22,6 +22,8 @@
  */
 int client_sock(char *host, unsigned short port);
 
+int main_client_wait();
+
 /**
  * traverse the file rooted at src
  * @param  sock_fd the socket file descriptor

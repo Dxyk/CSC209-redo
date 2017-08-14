@@ -26,6 +26,11 @@ int rcopy_client(char *src, char *host, unsigned short port) {
 	close(sock_fd);
 
 	// wait
+	if (main_client_wait() < 0) {
+		fprintf(stderr, "traverse: main client wait\n");
+		return -1;
+	}
+
 
 	return 0;
 }
