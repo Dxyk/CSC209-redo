@@ -6,6 +6,7 @@
 
 #define MAXPATH 128
 #define MAXDATA 256
+#define MAXCONNECTION 5
 
 // Input states
 #define AWAITING_TYPE 0
@@ -20,6 +21,7 @@
 #define REGDIR 2
 #define TRANSFILE 3
 
+// Server responses
 #define OK 0
 #define SENDFILE 1
 #define ERROR 2

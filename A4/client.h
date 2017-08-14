@@ -15,5 +15,19 @@
 #include "hash.h"       // hash()
 #include "ftree.h"      // request stuct
 
+/**
+ * Initialize a client socket
+ * @param  host the host address
+ * @return      the socket file descriptor
+ */
+int client_sock(char *host, unsigned short port);
+
+/**
+ * traverse the file rooted at src
+ * @param  sock_fd the socket file descriptor
+ * @return         0 on success; -1 on failure.
+ */
+int traverse(int sock_fd, char *src_path, char *server_path, char *host,
+	unsigned short port);
 
 #endif

@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 	strncat(path, "/", MAXPATH - strlen(path) + 1);
 	strncat(path, "sandbox", MAXPATH - strlen(path) + 1);
 
-	if (mkdir(path, 0700) == -1) {
+	if (mkdir(path, 0700) < 0) {
 		if (errno != EEXIST) {
 			fprintf(stderr, "couldn't open %s\n", path);
 			perror("mkdir");
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
 	// create the dest directory
 	strncat(path, "/", MAXPATH - strlen(path) + 1);
 	strncat(path, "dest", MAXPATH - strlen(path) + 1);
-	if (mkdir(path, 0700) == -1) {
+	if (mkdir(path, 0700) < 0) {
 		if (errno != EEXIST) {
 			fprintf(stderr, "couldn't open %s\n", path);
 			perror("mkdir");
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 	chdir(path);
 
 	// remove write and access perissions for sandbox
-	if (chmod("..", 0400) == -1) {
+	if (chmod("..", 0400) < 0) {
 		perror("chmod");
 		exit(1);
 	}
