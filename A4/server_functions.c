@@ -47,8 +47,6 @@ int server_sock() {
 		return -1;
 	}
 
-	printf("%d\n", listen_fd);
-
 	return listen_fd;
 }
 
@@ -109,9 +107,6 @@ struct client *remove_client(struct client *head, int client_fd) {
 }
 
 
-// FIXME: only copy one directory but not others. possibally due to wrong
-// 			HANDLE_DONE
-// FIXME: only mkfile but not read content
 /**
  * Handle the client at cp
  * @param  cp   the pointer pointing to the client
@@ -129,8 +124,8 @@ int handle_client(struct client *cp, struct client *head) {
 
 	// if all fields are read then compare the file/dir and sync
 	struct request *request = &(cp->client_req);
-	printf("type: %d; path: %s; mode: %u; hash: %s; size: %u\n", request->type,
-		   request->path, request->mode, request->hash, request->size);
+	printf("path: %s; type: %d; mode: %u; hash: %s; size: %u\n", request->path,
+		   request->type, request->mode, request->hash, request->size);
 
 	if (request->type == REGFILE || request->type == REGDIR) { // Main client
 		// compare file and send new request;
@@ -148,7 +143,6 @@ int handle_client(struct client *cp, struct client *head) {
 		cp->current_state = WAIT_TYPE;
 
 	} else if (request->type == TRANSFILE) { // File transfer client
-		printf("processing forked client for file: %s\n", cp->client_req.path);
 		result = -1;
 
 		if (S_ISDIR(request->mode)) { // dir
@@ -166,11 +160,15 @@ int handle_client(struct client *cp, struct client *head) {
 					return -1;
 				}
 			}
-			result = read_data(cp);
-			if (result < 0) {
-				fprintf(stderr, "handle_client: read_data: %s\n",
-						cp->client_req.path);
-				return -1;
+			if (request->size > 0) {
+				result = read_data(cp);
+				if (result < 0) {
+					fprintf(stderr, "handle_client: read_data: %s\n",
+							cp->client_req.path);
+					return -1;
+				}
+			} else {
+				request = OK;
 			}
 
 		} else { // Unsupported file type
@@ -201,11 +199,9 @@ int handle_client(struct client *cp, struct client *head) {
 int read_request(struct client *cp) {
 	ssize_t len;
 	struct request *request = &cp->client_req;
-	// printf("%s: ", request->path);
 
 	switch (cp->current_state) {
 	case WAIT_TYPE: {
-		// printf("reading type\n");
 		if ((len = read(cp->fd, &request->type, sizeof(int))) < 0) {
 			perror("read_request: read type");
 			return ERROR;
@@ -219,7 +215,6 @@ int read_request(struct client *cp) {
 		break;
 	}
 	case WAIT_PATH: {
-		// printf("reading path\n");
 		if ((len = read(cp->fd, request->path, MAXPATH)) < 0) {
 			perror("read_request: read path");
 			return ERROR;
@@ -232,7 +227,6 @@ int read_request(struct client *cp) {
 		break;
 	}
 	case WAIT_MODE: {
-		// printf("reading mode\n");
 		if ((len = read(cp->fd, &request->mode, sizeof(mode_t))) < 0) {
 			perror("read_request: read mode");
 			return ERROR;
@@ -246,7 +240,6 @@ int read_request(struct client *cp) {
 		break;
 	}
 	case WAIT_HASH: {
-		// printf("reading hash\n");
 		if ((len = read(cp->fd, request->hash, BLOCKSIZE)) < 0) {
 			perror("read_request: read hash");
 			return ERROR;
@@ -259,7 +252,6 @@ int read_request(struct client *cp) {
 		break;
 	}
 	case WAIT_SIZE: {
-		// printf("reading size\n");
 		if ((len = read(cp->fd, &request->size, sizeof(size_t))) < 0) {
 			perror("read_request: read size");
 			return ERROR;
@@ -270,7 +262,6 @@ int read_request(struct client *cp) {
 		}
 		request->size = ntohs(request->size);
 		cp->current_state = WAIT_OK;
-		printf("request read done: %s\n", request->path);
 		return HANDLE_READDONE;
 	}
 	case WAIT_OK: {
@@ -370,8 +361,6 @@ static int make_dir(struct client *cp) {
  */
 static int read_data(struct client *cp) {
 	char buf[MAXDATA];
-	for (int c = 0; c < MAXDATA; c++, buf[c] = '\0')
-		;
 	int num_read, num_wrote;
 	if ((num_read = read(cp->fd, buf, MAXDATA)) < 0) {
 		perror("read_data: read");

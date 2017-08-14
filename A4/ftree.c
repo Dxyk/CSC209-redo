@@ -30,7 +30,7 @@ int rcopy_client(char *src, char *host, unsigned short port) {
 	return 0;
 }
 
-// FIXME: client pipe broken handle
+// FIXME: Error when syncing empty files
 void rcopy_server(unsigned short port) {
 	int listen_fd;
 	int nready, maxfd, client_fd;
@@ -54,9 +54,6 @@ void rcopy_server(unsigned short port) {
 	maxfd = listen_fd;
 
 	while (1) {
-		// for (int i = 0; i < 20; i++, printf("%c", '-'))
-		// 	;
-		// printf("\n");
 		rset = allset;
 
 		struct sockaddr_in peer;
@@ -68,8 +65,6 @@ void rcopy_server(unsigned short port) {
 			perror("rcopy_server: select");
 			continue;
 		}
-
-		// printf("%d sockets are ready\n", nready);
 
 		if (FD_ISSET(listen_fd, &rset)) {
 			// server is ready to accept a new connection
@@ -83,23 +78,17 @@ void rcopy_server(unsigned short port) {
 			if (client_fd > maxfd) {
 				maxfd = client_fd;
 			}
-			printf("connection from %s\n", inet_ntoa(peer.sin_addr));
 			if (!(head = add_client(head, client_fd, peer.sin_addr))) {
 				fprintf(stderr, "rcopy_server: add_client\n");
 				continue;
 			}
-			printf("a new client %d connected\n", client_fd);
 		}
 
 		for (p = head; p != NULL; p = p->next) {
 			if (FD_ISSET(p->fd, &rset)) {
-				// printf("%d is ready\n", p->fd);
 				int result = handle_client(p, head);
 				if (result == HANDLE_DONE || result < 0) {
-					if (result == HANDLE_DONE) {
-						printf("HANDLE_DONE: handle for %d was successful\n",
-							   p->fd);
-					} else {
+					if (result != HANDLE_DONE) {
 						fprintf(stderr, "rcopy_server: handle_client %d\n",
 								p->fd);
 					}

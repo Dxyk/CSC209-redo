@@ -43,13 +43,11 @@ int client_sock(char *host, unsigned short port) {
 	}
 
 	/* request connection to server */
-	// printf("connecting\n");
 	if (connect(sock_fd, (struct sockaddr *)&peer, sizeof(peer)) < 0) {
 		perror("client_sock: connect");
 		close(sock_fd);
 		return -1;
 	}
-	// printf("connected\n");
 
 	return sock_fd;
 }
@@ -68,8 +66,8 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 		fprintf(stderr, "traverse: generate_request\n");
 		return -1;
 	}
-	printf("type: %d; path: %s; mode: %u; hash: %s; size: %u\n", req.type,
-		   req.path, req.mode, req.hash, req.size);
+	printf("path: %s; type: %d; mode: %u; hash: %s; size: %u\n", req.path,
+		   req.type, req.mode, req.hash, req.size);
 
 	if (send_request(sock_fd, &req) < 0) {
 		fprintf(stderr, "traverse: send_request\n");
@@ -77,7 +75,7 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 	}
 
 	// read the response to see if client should fork and send file
-	int response;
+	int response = ERROR;
 	if (read(sock_fd, &response, sizeof(int)) < 0) {
 		perror("traverse: read");
 		return -1;
@@ -92,7 +90,6 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 			return -1;
 		} else if (result == 0) { // child
 			// create a new socket
-			printf("In child process for %s\n", src_path);
 			sock_fd = client_sock(host, port);
 			int file_type = req.type;
 			req.type = TRANSFILE;
@@ -138,7 +135,7 @@ int traverse(int sock_fd, char *src_path, char *server_path, char *host,
 				"traverse: the server responded with ERROR on file %s\n",
 				src_path);
 		return -1;
-	} else {
+	} else if (response != OK) {
 		fprintf(stderr, "traverse: invalid response from server\n");
 		return -1;
 	}
@@ -288,7 +285,6 @@ static int send_request(int sock_fd, struct request *request) {
 
 static int send_data(int sock_fd, char *src_path) {
 	FILE *f;
-	printf("Sending data:  %s\n", src_path);
 	if (!(f = fopen(src_path, "rb"))) {
 		perror("send_data: fopen");
 		return -1;
@@ -320,7 +316,6 @@ static int send_data(int sock_fd, char *src_path) {
 		perror("send_data: fclose");
 		return -1;
 	}
-	printf("Data sent: %s\n", src_path);
 
 	return 0;
 }

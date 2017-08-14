@@ -23,7 +23,6 @@ char *hash(char *hash_val, FILE *f) {
 int check_hash(const char *hash1, const char *hash2) {
     for (long i = 0; i < BLOCK_SIZE; i++) {
         if (hash1[i] != hash2[i]) {
-            printf("Index %ld: %c\n", i, hash1[i]);
             return 1;
         }
     }
