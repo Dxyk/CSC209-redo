@@ -35,7 +35,7 @@ int rcopy_client(char *src, char *host, unsigned short port) {
 	return 0;
 }
 
-// FIXME: Error when syncing empty files
+
 void rcopy_server(unsigned short port) {
 	int listen_fd;
 	int nready, maxfd, client_fd;

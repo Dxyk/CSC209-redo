@@ -154,25 +154,26 @@ int handle_client(struct client *cp, struct client *head) {
 			}
 
 		} else if (S_ISREG(request->mode)) { // file
-			if (!cp->file) {
+			if (!cp->file) { // if file does not exist, create file
 				if (!(cp->file = fopen(request->path, "wb"))) {
 					perror("fopen");
 					return -1;
 				}
 			}
-			if (request->size > 0) {
+			if (request->size > 0) { // if file has content then write file
 				result = read_data(cp);
 				if (result < 0) {
 					fprintf(stderr, "handle_client: read_data: %s\n",
 							cp->client_req.path);
 					return -1;
 				}
-			} else {
+			} else { // if file does not have content
 				request = OK;
 				if (write(cp->fd, &request, sizeof(int)) < 0) {
 					perror("make_dir: write");
 					return -1;
 				}
+				return result;
 			}
 
 		} else { // Unsupported file type
@@ -209,10 +210,8 @@ int read_request(struct client *cp) {
 		if ((len = read(cp->fd, &request->type, sizeof(int))) < 0) {
 			perror("read_request: read type");
 			return ERROR;
-		} else if (len == 0) {
-			fprintf(stderr, "read_request: socket closed when reading type. "
-							"Closing socket\n");
-			return -1;
+		} else if (len == 0) { // socket closed
+			return HANDLE_READDONE;
 		}
 		request->type = ntohl(request->type);
 		cp->current_state = WAIT_PATH;
