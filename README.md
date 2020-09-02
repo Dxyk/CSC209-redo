@@ -1,2 +1,3 @@
-# CSC209-redo
-Redo CSC209
+# CSC209 Software Tools and Systems Programming
+
+CSC209 Software Tools and Systems Programming
